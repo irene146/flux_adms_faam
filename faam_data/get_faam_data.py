@@ -1,7 +1,7 @@
 """
 Created on Thu Apr 11 11:03:46 2024
 
-@author: Irene Monreal
+@author: Irene Monreal and Dave Sproson <3
 """
 import nappy
 import netCDF4
