@@ -82,6 +82,8 @@ max_min_df = pd.DataFrame(maxmin_dict)
 df.reset_index(drop=True, inplace=True)
 df = df.iloc[:, 2:]
 
+#save as csv
+df.to_csv('yourfilename.csv')
 #plot
 plt.scatter(df['X'], df['Y'], color='blue', marker='o', label='Data Points')
 
