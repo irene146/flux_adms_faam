@@ -24,7 +24,7 @@ from scipy.stats import sem
 
 
 df = pd.read_csv(
-    "MTGA_20220911b_merge_v3.csv", #datietime, lat, lon, height, conc
+    "MTGA_20220911b_merge_v3.csv", #datietime, lat, lon, height, conc, speed
     header=[0], 
     parse_dates=True, 
     index_col=68, #establish colum number of your datetim
@@ -74,13 +74,26 @@ plumes['end']=plumes['end']+timedelta(seconds=15)
 
 peakid.plot_plumes(ch4, plumes)
 
-ch4_areas = peakid.integrate_aup_trapz(ch4 - bg, plumes, dx=0.1) 
+ch4_areas = peakid.integrate_aup_trapz(ch4 - bg, plumes, dx=0.1)  #this contains IE values in ppm*seconds
 """
 Peak ID integration funciton uses trapezoidal approach
-Change dx depending on the measurement rate of the instrument
+Change dx depending on the measurement rate of the instrument 1 for 1Hz, 0.1 for 10Hz
 """
-heights= [43,37,102,105,169,236,236,302,296,364,360]
-distance= [1,2,1,2,2,1,2,1,2,1,2]
+
+
+heights =[]
+# calculate the average height for each plume 
+for i, row in plumes.iterrows():
+    start_time = row['start']
+    end_time = row['end']
+    mask = (df.index >= start_time) & (df.index <= end_time)
+    avg_speed = df.loc[mask, 'GPS_ALT'].mean() #change GPS_ALT for the column name of the height measurements in your df
+    speed.append(avg_speed)
+
+heights =np.array(heights)
+
+distance= [1,2,1,2,2,1,2,1,2,1,2] #in this specific case there were two distances from the source measured close in time, so filtered by them. 
+
 
 speed=[]
 # calculate the average speed for each plume interval
@@ -88,16 +101,17 @@ for i, row in plumes.iterrows():
     start_time = row['start']
     end_time = row['end']
     mask = (df.index >= start_time) & (df.index <= end_time)
-    avg_speed = df.loc[mask, 'IRS_GS'].mean()
+    avg_speed = df.loc[mask, 'IRS_GS'].mean() #change IRS_GS for the column name of the GROUND SPEED measurements in your df
     speed.append(avg_speed)
 
 speed =np.array(speed)
 
-#convert peak area from ppmm to ppbs 
 
-area_ppbs = np.array(ch4_areas['area']*speed*1000)
+area_ppbs = np.array(ch4_areas['area']*speed*1000)#convert IE values from ppm*seconds to ppb*meters (check units of your df)
 
-peak_areas = pd.DataFrame({'height_m': heights, 'distance': distance, 'area_ppbs': area_ppbs})
+
+peak_areas = pd.DataFrame({'height_m': heights, 'distance': distance, 'area_ppbs': area_ppbs}) #putt everything into a df for easy visualisation 
+
 
 
 peak_areas_close = peak_areas[peak_areas['distance'] <=1.5]
@@ -105,6 +119,10 @@ peak_areas_far = peak_areas[peak_areas['distance'] >=1.5]
 heights_far =np.array(peak_areas_far['height_m'], dtype=int)
 pk_far =np.array(peak_areas_far['area_ppbs'], dtype=int)
 
+
+#################################
+#IE calculations with peak ID
+#################################
 #GAUSSIAN APPROACH
 '''
 def gaussian(x, a, b, c):
