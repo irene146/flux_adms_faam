@@ -2,6 +2,8 @@
 Created on Thu Apr 11 11:03:46 2024
 
 @author: Irene Monreal and Dave Sproson <3
+
+Lines you need to modify: 27,29,31,40,49,62,70,73,82,84-89
 """
 import nappy
 import netCDF4
@@ -25,9 +27,6 @@ from collections import OrderedDict
 faam = FAAM(['d:\\your_directory']) #recognises faam core files on that directory 
 faam.flights #recognises what flights you have available 
 CXXX = faam['flightnumber'].core #write fligh tnumebr you want to get data from 
-
-
-
 
 data = CXXX[['LAT_GIN', 'LON_GIN', 'HGT_RADR']] #select variables that you need 
 
@@ -60,14 +59,15 @@ timestamp = netCDF4.num2date(ds.X, time_units) #converts number to time format
 #turn the .na file into a df 
 _dict = OrderedDict()  #create empty organised dictionary (remebers what was added first )
 _dict['timestamp'] = timestamp #adds timestamp to the dictionary 
-for i, v in enumerate(['co2_ppm', 'co2_flag', 'ch4_ppb', 'ch4_flag']): #interates over the strings gettig both index (i) and value (v)                                                                       
+for i, v in enumerate(['co2_ppm', 'co2_flag', 'ch4_ppb', 'ch4_flag']): #interates over the strings gettig both index (i) and value (v)      
+                                                                       #CHANGE column names depending on the gases that you are interested in 
     #print(f'reading {v}')
     _dict[v] = ds.V[i] 
 df = pd.DataFrame(_dict) #converts _dic to a pandas dataframe
 df = df.set_index('timestamp') #set index to timestamp column 
 
 
-df.to_csv('fgga_flightnumber.csv')
+df.to_csv('fgga_flightnumber.csv') 
 
 #can avoid this step if you don't want to save fgga data on its own
 fgga = pd.read_csv('fgga_flightnumber.csv', index_col=[0], parse_dates=True, date_format="ISO8601")  #import fgga data correcting for date format 
