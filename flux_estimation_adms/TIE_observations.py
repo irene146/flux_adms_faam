@@ -3,6 +3,13 @@
 Created on Fri Jul 12 13:59:33 2024
 
 @author: FAAM_Student
+
+IE and TIE caclulations for observational (aircraft)
+Steps: 
+1. Read data (csv)
+2. Calculate IE with peak ID 
+3. Convert IE into the correct units 
+4. Calculate TIE with Gaussian or trapezoidal approach 
 """
 
 import datetime
@@ -20,37 +27,58 @@ df = pd.read_csv(
     "MTGA_20220911b_merge_v3.csv", #datietime, lat, lon, height, conc
     header=[0], 
     parse_dates=True, 
-    index_col=68,
+    index_col=68, #establish colum number of your datetim
     date_parser=lambda x: datetime.datetime.strptime(x, "%Y-%m-%d %H:%M:%S%z")
 )
-
 df.index = df.index.tz_localize(None)
+
+"""
+ MTGA_20220911b_merge_v3.csv": Filename of the CSV file. Change this to your actual filename.
+    - header=0: Indicates that the first row of the file is the header.
+    - parse_dates=True: Ensures that date columns are parsed as datetime objects.
+    - index_col=68: The 0-based index of the column containing datetime information. Change this to match your datetime column.
+    - date_parser=lambda x: datetime.datetime.strptime(x, "%Y-%m-%d %H:%M:%S%z")
+    Lambda function to parse the datetime format in the CSV. Adjust the format string to match your specific datetime format.
+"""
 
 
 start_time = datetime.datetime(2022, 9, 11, 14, 20, 0)
 end_time = datetime.datetime(2022, 9, 11, 15, 21, 31)
 df = df.loc[start_time : end_time]
+"""
+Filter your dataframe by the start and end time of your sampling period (established in the plot_ch4 script)
+"""
 
-#peak ID 
-ch4= df['CH4_ppm_pic']
+#################################
+#IE calculations with peak ID
+#################################
 
-#run peak ID (to be modified with newest version:https://github.com/wacl-york/acruise-peakid/tree/main/acruisepy)
+ch4= df['CH4_ppm_pic']  #select column in your df with your gas concentration data 
+
+#run peak ID (VERY GOOD USER GUIDE :https://github.com/wacl-york/acruise-peakid/tree/main/acruisepy)
 
 #yellow line(plume threshold)x:limit to detect plume
 #blue line (plume starting):where plume starts once it is detected
 
 bg = peakid.identify_background(ch4, bg_sd_window=2, bg_sd_threshold=0.001, bg_mean_window=200)
-#peakid.plot_background(ch4, bg, plume_sd_threshold=4, plume_sd_starting=0)
+peakid.plot_background(ch4, bg, plume_sd_threshold=4, plume_sd_starting=0)
 
 plumes = peakid.detect_plumes(ch4, bg, plume_sd_threshold=4, plume_sd_starting=0, plume_buffer=1)
-#plumes['start']=plumes['start']-timedelta(seconds=4)
-#plumes['end']=plumes['end']+timedelta(seconds=15)
+
+#sometimes peak ID doesnt detect the full width of the peaks, you can check this with its own plots.
+#you cann add a few seconds at the start and end time finishes of the plumes to account for this 
+plumes['start']=plumes['start']-timedelta(seconds=4)
+plumes['end']=plumes['end']+timedelta(seconds=15)
+
 
 
 peakid.plot_plumes(ch4, plumes)
 
-ch4_areas = peakid.integrate_aup_trapz(ch4 - bg, plumes, dx=0.1)
-
+ch4_areas = peakid.integrate_aup_trapz(ch4 - bg, plumes, dx=0.1) 
+"""
+Peak ID integration funciton uses trapezoidal approach
+Change dx depending on the measurement rate of the instrument
+"""
 heights= [43,37,102,105,169,236,236,302,296,364,360]
 distance= [1,2,1,2,2,1,2,1,2,1,2]
 
