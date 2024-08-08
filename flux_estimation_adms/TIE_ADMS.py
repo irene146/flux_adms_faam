@@ -22,7 +22,7 @@ df_fgga2= pd.read_csv("faam_x_y.csv", header=0, index_col=0)
 def gaussian(x, a, b, c):
     return a *np.exp(-((x-b)**2)/(2*c**2))
 
-#define adms_peak area function
+#define adms_peak area function (can rewrite to make it better) 
 def ADMS_peak_area(z_colum, df):
     #grab only lats and lons  for one of the transects , you assume that transects are supersimposed 
     df_fgga = df_fgga2.loc[(df_fgga2['HGT_RADR'] > 280) & (df_fgga2['HGT_RADR'] <= 350)]
