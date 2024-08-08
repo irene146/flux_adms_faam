@@ -93,7 +93,9 @@ def ADMS_peak_area(z_colum, df):
     return int_gauss_result, int_error
 
 
-# change to directory with all yor ADMSgst files 
+
+#ANALYSING MODEL OUTPUTS 
+# change to directory with all yor ADMS .levels.gst files 
 directory = "D://wellehadA_volume//wellheadA//sstemp//t10//550//"
 #gst file that you want to analyse 
 gst_file = "wellheada_cerc_corrections_temp_ss10.levels.gst"
@@ -109,74 +111,117 @@ peak_areas = []
 peak_errors = []
    
 for i, z_column in enumerate(df.columns[2:]): # [2:] because x and y are the two first columns 
-    #calculate peak area (gaussian) and error for each height adnd add them to the list 
+    #calculate IE and error for each height adnd add them to the list 
         peak_area, peak_error = ADMS_peak_area(z_column, df)
         peak_areas.append(peak_area)
         
         peak_errors.append(peak_error)
-        # extract the Z value from the column name
+        # extract the Z value from the column name of ADMS model output
         height = z_column.split('=')[1].split('m')[0]
         heights.append(height)
         
         
-# =============================================================================
-# code up to here takes a long time to run as gst files are big, can save into a csv and do curve fit latetr 
-# =============================================================================
 
-      
-#after loop you have 3 lists, with heights, peak areas and peak errors for a single folder(flux) (similar to peak ID data)
+# code up to here takes a long time to run as gst files are big, can save into a csv and do TIE calculations latetr 
+
 height_area_results = {'heights': heights, 'peak_area': peak_areas, 'peak_area_error': peak_errors}
 
 # convert the dictionary to a dataframe 
 height_area_results = pd.DataFrame(height_area_results)
-height_area_results.to_csv('cerc_temp_sstemp10.csv')
+height_area_results.to_csv('yourcsv.csv')
 
 
-
-#TIE calculation
-'''
-df_1 =pd.read_csv('550cerc_temp_sstemp.csv', index_col=0, header=0)
+#################################
+#TIE calculations
+##################################
+df_1 =pd.read_csv('yourcsv.csv', index_col=0, header=0)
 x_data_adms_1 = np.array(df_1['heights'])
 y_data_adms_1 = np.array(df_1['peak_area'])
+#read IE df,and separate columns into arrays 
 
-
-
+"""
+Two approaches you can calculate TIE 
+Gaussian approach : fit a Gaussian (or half Gaussian) to your dataset with curve fit function
+    Guess parameters (p0) are not the best, sometimes used Matlab to get a fit
+    Monte Carlo integration to get errors
+Trapezoidal approach: 
+A lot shorter and less fiddely. 
+"""
 
 #Gaussian approach 
 
 def half_gaussian(x,a1,b1,c1):
+            """Half aussian function for curve fitting """
    return a1*np.exp(-((x-b1)/c1)**2)
 
+# Initial guess for the fitting parameters [a1, b1, c1]
 guess =(25658, 69.2191,479.5105)
 
 fit_1,err_1 = curve_fit(half_gaussian, x_data_adms_1, y_data_adms_1, p0=guess)
+"""
+curve fit arguments: 
+(funciton, x-axix, y-axix, guess parameters)  change the x and y axis  
+
+fit: Optimal values for the parameters
+err: The estimated approximate covariance of fit
+"""
 
 a1_1,b1_1,c1_1 =fit_1
     
-perradms_1 = np.sqrt(np.diag(err_1))
+perradms_1 = np.sqrt(np.diag(err_1)) #one standard deviation errors on the parameters
 
 
 def integrand(x,a1,b1,c1):
     return half_gaussian(x,a1,b1,c1)
+    """
+defines integrand of the gaussian 
+"""
 
 # Define the Monte Carlo simulation function to propagate parameter uncertainties
 def monte_carlo_integration(func, params, param_errors, x_min, x_max, num_samples=5000):
-    integral_values = []
+      """
+    Perform Monte Carlo integration to propagate parameter uncertainties.
+    
+    Args:
+        func (callable): The integrand function.
+        params (list): Best-fit parameters for the integrand.
+        param_errors (list): Errors associated with the parameters.
+        x_min (float): Minimum x value for integration.
+        x_max (float): Maximum x value for integration.
+        num_samples (int): Number of samples for the Monte Carlo simulation.
+    
+    Returns:
+       Mean and standard deviation of the integral values.
+    """
+        integral_values = []
     for _ in range(num_samples):
         sampled_params = np.random.normal(params, param_errors)
         integral_value, _ = quad(func, x_min, x_max, args=tuple(sampled_params))
         integral_values.append(integral_value)
     return np.mean(integral_values), np.std(integral_values)
 
-
-# Integration limits
+# Integration limits. Change depending on your domain (min and max heights) 
 x_min = 75
 x_max = 595
 
 # Perform Monte Carlo integration
 integral_value_adms_1, integral_error_adms_1 = monte_carlo_integration(integrand, fit_1, perradms_1, x_min, x_max)
 
+"""
+Output: integral_value: TIE in ppb*meters^2
+"""
 
+#TRAPEZOIDAL APPROACH     
+dx=1#define dx as 1 (meters) 
+area_tap=np.trapz(df_1, x=x_data_adms_1,dx=dx)
+"""
+function arguments: 
+(y-axis, x=x-axis, dx=dx) 
+Output: area_tap: TIE in ppb*meters^2
+"""
+
+ 
+#plot
 x = np.linspace(75, 600, 10000)
 
 plt.figure(figsize=(10, 6))
@@ -192,11 +237,3 @@ plt.ylabel('Peak Area (ppb*m)',fontsize = 14)
 plt.tick_params(axis='both', which='major', labelsize=14)
 plt.legend()
 plt.show()
-#plt.savefig('peak_areas_faam_adms_pbl_mbl.png', dpi = 2000)
-
-#trapezoidal approach: 
-    
-dx=1
-area_tap=np.trapz(df_1, x=x_data_adms_1,dx=dx)
-
-''' 
