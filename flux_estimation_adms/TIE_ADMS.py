@@ -3,6 +3,11 @@
 Created on Wed Apr 24 11:58:03 2024
 
 @author: FAAM_Student
+IE and TIE caclulations for ADMS model output
+Steps: 
+1. Read data (csv)
+2. Calculate IE with gaussian fit 
+4. Calculate TIE with Gaussian or trapezoidal approach 
 """
 
 import pandas as pd
@@ -14,9 +19,12 @@ from scipy.optimize import curve_fit
 from scipy.integrate import quad
 import os 
 
-#import faam data converted to  xy coord
+#import observational data converted to xy with lat_lon_to_x_y.py 
 df_fgga2= pd.read_csv("faam_x_y.csv", header=0, index_col=0)
 
+#################################
+#IE calculations
+##################################
 
 #degine gaussian function 
 def gaussian(x, a, b, c):
@@ -24,9 +32,36 @@ def gaussian(x, a, b, c):
 
 #define adms_peak area function (can rewrite to make it better) 
 def ADMS_peak_area(z_colum, df):
-    #grab only lats and lons  for one of the transects , you assume that transects are supersimposed 
+     """
+    Calculate the peak area of methane concentration enhancements for a given transect using ADMS data.
+
+    This function performs the following steps:
+    1. Filters the input DataFrame `df` for a specific altitude range.
+    2. Interpolates the ADMS methane data (`z_colum`) to match FAAM aircraft coordinates.
+    3. Computes the cumulative distance along the FAAM transect using the Pythagorean theorem.
+    4. Identifies the maximum methane concentration from the interpolated data and the corresponding distance.
+    5. Fits a Gaussian curve to the interpolated methane concentration data along the distance axis.
+    6. Calculates the area under the Gaussian curve, which represents IE 
+       and returns this value along with the associated error.
+    Parameters:
+    -----------
+    z_colum : str
+        The name of the column in `df` containing the ADMS methane concentration data.
+    df : pandas.DataFrame
+        A DataFrame containing the ADMS data, including coordinates and methane concentration.
+
+    Returns:
+    --------
+    int_gauss_result : float
+        The calculated peak area under the Gaussian fit, representing the methane concentration enhancement.
+    int_error : float
+        The estimated error of the Gaussian fit integration.
+    """
+    #grab only lats and lons  for one of the transects , you assume that transects are supersimposed (can be improved to grab each stransect) 
+    #change HGT_RADR for the column name of your height parameter and slect height intervals (280-350 in this case) 
     df_fgga = df_fgga2.loc[(df_fgga2['HGT_RADR'] > 280) & (df_fgga2['HGT_RADR'] <= 350)]
     #interpolate adms methane data so that it matches faam coordinates. gives ch4 adms enhancements just for faam coordiantes(DAVE)
+        #check coordinates column names match these: X(m) and Y(m) for ADMS coordinates and X and Y for observational coordinates 
     adms_interpolated2 = griddata((df['X(m)'], df['Y(m)']), df[z_colum], (df_fgga.X, df_fgga.Y))
     adms_interpolated = np.nan_to_num(adms_interpolated2, nan=0)
     #calculate the distance of the faam transect with pythagoras(dave)
@@ -40,7 +75,7 @@ def ADMS_peak_area(z_colum, df):
 
     #find corresponding distance to max ch4 value for better fit 
     distance_at_max_ch4 = dist[max_index]
-    #parameters correspond to width, mean, and sd of the initial gaussian fit ans are guesses
+    #parameters correspond to width, mean, and sd of the initial gaussian fit ans are guesses, change if necessary
     p0=[6000, distance_at_max_ch4,1000]
     fit, cov = curve_fit(gaussian, dist, adms_interpolated, p0=p0)
 
@@ -56,8 +91,9 @@ def ADMS_peak_area(z_colum, df):
     int_gauss_result, int_error = quad(integrand, min_limit_dist, max_limit_dist)
     #ADMS_peak_area returns the peak area for a single peak ant a single height and the error 
     return int_gauss_result, int_error
-    
-#directory with all yor gst files 
+
+
+# change to directory with all yor ADMSgst files 
 directory = "D://wellehadA_volume//wellheadA//sstemp//t10//550//"
 #gst file that you want to analyse 
 gst_file = "wellheada_cerc_corrections_temp_ss10.levels.gst"
