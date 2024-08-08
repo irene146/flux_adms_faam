@@ -50,34 +50,37 @@ Filter your dataframe by the start and end time of your sampling period (establi
 """
 
 #################################
-#IE calculations with peak ID
+#IE calculations
 #################################
 
-ch4= df['CH4_ppm_pic']  #select column in your df with your gas concentration data 
+# Select the column in your DataFrame with the gas concentration data
+ch4 = df['CH4_ppm_pic']
 
-#run peak ID (VERY GOOD USER GUIDE :https://github.com/wacl-york/acruise-peakid/tree/main/acruisepy)
 
-#yellow line(plume threshold)x:limit to detect plume
-#blue line (plume starting):where plume starts once it is detected
+# Run peak identification. Refer to the user guide: https://github.com/wacl-york/acruise-peakid/tree/main/acruisepy
 
+# Identify background levels of CH4 concentration
 bg = peakid.identify_background(ch4, bg_sd_window=2, bg_sd_threshold=0.001, bg_mean_window=200)
+
+# Plot the identified background
 peakid.plot_background(ch4, bg, plume_sd_threshold=4, plume_sd_starting=0)
 
+# Detect plumes based on the background levels
 plumes = peakid.detect_plumes(ch4, bg, plume_sd_threshold=4, plume_sd_starting=0, plume_buffer=1)
 
-#sometimes peak ID doesnt detect the full width of the peaks, you can check this with its own plots.
-#you cann add a few seconds at the start and end time finishes of the plumes to account for this 
+# Adjust the start and end times of the detected plumes to account for potential underestimation
 plumes['start']=plumes['start']-timedelta(seconds=4)
 plumes['end']=plumes['end']+timedelta(seconds=15)
 
 
-
+# Plot the detected plumes
 peakid.plot_plumes(ch4, plumes)
 
-ch4_areas = peakid.integrate_aup_trapz(ch4 - bg, plumes, dx=0.1)  #this contains IE values in ppm*seconds
+# Integrate the area under the curve for each plume to obtain IE values in ppm*seconds
+ch4_areas = peakid.integrate_aup_trapz(ch4 - bg, plumes, dx=0.1)
 """
-Peak ID integration funciton uses trapezoidal approach
-Change dx depending on the measurement rate of the instrument 1 for 1Hz, 0.1 for 10Hz
+Peak ID integration function uses the trapezoidal approach.
+Change dx depending on the measurement rate of the instrument: 1 for 1Hz, 0.1 for 10Hz.
 """
 
 
@@ -92,7 +95,8 @@ for i, row in plumes.iterrows():
 
 heights =np.array(heights)
 
-distance= [1,2,1,2,2,1,2,1,2,1,2] #in this specific case there were two distances from the source measured close in time, so filtered by them. 
+# Example distances list for this specific case
+distance= [1,2,1,2,2,1,2,1,2,1,2] 
 
 
 speed=[]
@@ -106,14 +110,13 @@ for i, row in plumes.iterrows():
 
 speed =np.array(speed)
 
+# Convert IE values from ppm*seconds to ppb*meters (verify units of your DataFrame)
+area_ppbs = np.array(ch4_areas['area']*speed*1000)
 
-area_ppbs = np.array(ch4_areas['area']*speed*1000)#convert IE values from ppm*seconds to ppb*meters (check units of your df)
+#Put everything into a df for easy visualisation 
+peak_areas = pd.DataFrame({'height_m': heights, 'distance': distance, 'area_ppbs': area_ppbs}) 
 
-
-peak_areas = pd.DataFrame({'height_m': heights, 'distance': distance, 'area_ppbs': area_ppbs}) #putt everything into a df for easy visualisation 
-
-
-
+# Filter by distances for this specific case
 peak_areas_close = peak_areas[peak_areas['distance'] <=1.5]
 peak_areas_far = peak_areas[peak_areas['distance'] >=1.5]
 heights_far =np.array(peak_areas_far['height_m'], dtype=int)
@@ -121,26 +124,59 @@ pk_far =np.array(peak_areas_far['area_ppbs'], dtype=int)
 
 
 #################################
-#IE calculations with peak ID
+#TIE calculations 
 #################################
+"""
+Two approaches you can calculate TIE 
+Gaussian approach : fit a Gaussian (or half Gaussian) to your dataset with curve fit function
+    Guess parameters (p0) are not the best, sometimes used Matlab to get a fit
+    Monte Carlo integration to get errors
+Trapezoidal approach: 
+A lot shorter and less fiddely. 
+"""
 #GAUSSIAN APPROACH
-'''
+
 def gaussian(x, a, b, c):
-    return a * np.exp(-(x - b)**2 / (2 * c**2))
+        """Gaussian function for curve fitting."""
+    return a * np.exp(-(x - b)**2 / (2 * c**2)) 
 
-p0=(2370.426, 309.4721, 96.39894)
+#inital guess parameters for the fit
+p0=(2370.426, 309.4721, 96.39894) 
 
-fit,err = curve_fit(gaussian, heights_far, pk_far, p0=p0)
+fit,err = curve_fit(gaussian, heights_far, pk_far, p0=p0) 
+"""
+curve fit arguments: 
+(funciton, x-axix, y-axix, guess parameters)  change the x and y axis  
 
-a1,b1,c1 =fit
+fit: Optimal values for the parameters
+err: The estimated approximate covariance of fit.
+"""
+a1,b1,c1 =fit  
     
-perr = np.sqrt(np.diag(err))
+perr = np.sqrt(np.diag(err)) #one standard deviation errors on the parameters
 
 def integrand(x,a1,b1,c1):
     return gaussian(x,a1,b1,c1)
+"""
+defines integrand of the gaussian 
+"""
 
 # Define the Monte Carlo simulation function to propagate parameter uncertainties
-def monte_carlo_integration(func, params, param_errors, x_min, x_max, num_samples=5000):
+def monte_carlo_integration(func, params, param_errors, x_min, x_max, num_samples=5000): 
+     """
+    Perform Monte Carlo integration to propagate parameter uncertainties.
+    
+    Args:
+        func (callable): The integrand function.
+        params (list): Best-fit parameters for the integrand.
+        param_errors (list): Errors associated with the parameters.
+        x_min (float): Minimum x value for integration.
+        x_max (float): Maximum x value for integration.
+        num_samples (int): Number of samples for the Monte Carlo simulation.
+    
+    Returns:
+       Mean and standard deviation of the integral values.
+    """
     integral_values = []
     for _ in range(num_samples):
         sampled_params = np.random.normal(params, param_errors)
@@ -148,21 +184,28 @@ def monte_carlo_integration(func, params, param_errors, x_min, x_max, num_sample
         integral_values.append(integral_value)
     return np.mean(integral_values), np.std(integral_values)
 
-# Assuming fit_params contains the best-fit parameters and fit_errors contains the errors
 fit_params = fit
 fit_errors = perr
 
-# Integration limits
+# Integration limits. Change depending on your domain (min and max heights) 
 x_min = 35
 x_max = 360
 
 # Perform Monte Carlo integration
 integral_value, integral_error = monte_carlo_integration(integrand, fit, perr, x_min, x_max)
-'''
+"""
+Output: integral_value: TIE in ppb*meters^2
+"""
 
-#trapezoidal approach 
-dx=1
+#TRAPEZOIDAL APPROACH 
+dx=1 #define dx as 1 (meters) 
 area_tap=np.trapz(pk_far, x=heights_far,dx=dx)
+"""
+function arguments: 
+(y-axis, x=x-axis, dx=dx) 
+"""
+
+#plot
 x = np.linspace(35, 360, 10000)
 plt.figure(figsize=(10, 6))
 plt.scatter(heights_far, pk_far, label='Peak areas ppb.s', color='blue')
