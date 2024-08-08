@@ -11,19 +11,33 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 import numpy as np
 
+#read your csv with obervational latitudes and longitudes 
 df =pd.read_csv('fgga_core_b689.csv', header=[0], parse_dates=True, index_col=0,)
 
+#filter by sampling times (from plot_ch4)
 start_time = datetime.datetime(2012, 4, 3, 13, 45, 0)
 end_time = datetime.datetime(2012, 4, 3, 14, 40, 0)
 df = df.loc[start_time : end_time]
 
-
+#filter by sampling locations deleting turns (from plot_ch4)
 df = df.loc[(df['LON_GIN'] >= 1.5) & (df['LON_GIN'] <= 2)]
 df = df.loc[(df['LAT_GIN'] >= 56.90) & (df['LAT_GIN'] <= 57)]
 
-df = df.iloc[:, :3]
+#select only lat and lon columns 
+df = df.iloc[:, :3] 
 
 def haversine(lat1, lon1, lat2, lon2):
+     """
+    Calculate the great-circle distance between two points 
+    on the Earth's surface given their latitude and longitude.
+    
+    Parameters:
+    lat1, lon1: float. Latitude and Longitude of point 1.
+    lat2, lon2: float. Latitude and Longitude of point 2.
+    
+    Returns:
+    float. Distance between the two points in meters.
+    """
     R = 6371000  # Radius of the Earth in meters
     phi1 = math.radians(lat1)
     phi2 = math.radians(lat2)
@@ -39,6 +53,17 @@ def haversine(lat1, lon1, lat2, lon2):
     return d
 
 def latlon_to_xy(lat, lon, ref_lat, ref_lon):
+     """
+    Convert latitude and longitude to x and y coordinates 
+    relative to a reference point.
+    
+    Parameters:
+    lat, lon: float. Latitude and Longitude to be converted.
+    ref_lat, ref_lon: float. Latitude and Longitude of the reference point.
+    
+    Returns:
+    tuple. X and Y coordinates.
+    """
     # Reference point
     ref_x = haversine(ref_lat, ref_lon, ref_lat, lon)
     ref_y = haversine(ref_lat, ref_lon, lat, ref_lon)
@@ -49,7 +74,7 @@ def latlon_to_xy(lat, lon, ref_lat, ref_lon):
     
     return x, y
 
-# Reference point
+# Reference point. This will be the lat and lons of your source 
 #PUQ
 # =============================================================================
 # ref_lat = 57.011046
@@ -63,7 +88,6 @@ ref_lon = 1.838534
 #convert rows of df from lat lon to x y 
 df['X'], df['Y'] = zip(*df.apply(lambda row: latlon_to_xy(row['LAT_GIN'], row['LON_GIN'], ref_lat, ref_lon), axis=1))
 
-#convert df to csv
 # Calculate max and min values for X and Y
 max_x = df['X'].max()
 min_x = df['X'].min()
@@ -84,6 +108,9 @@ df = df.iloc[:, 2:]
 
 #save as csv
 df.to_csv('yourfilename.csv')
+
+
+
 #plot
 plt.scatter(df['X'], df['Y'], color='blue', marker='o', label='Data Points')
 
