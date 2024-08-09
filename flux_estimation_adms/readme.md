@@ -79,23 +79,13 @@ The highest resolution of meteorology data allowed in ADMS is 1h, and for the in
 - For variable names and units, check the ADMS 6 user manual on page 342.
 - The main idea with input met data is to include as much as possible from the aircraft data, but if you don’t know a value, it is better to let the model calculate rather than guessing yourself. 
 
- Temperature (T0C):
+Temperature (T0C): ADMS assumes temperature measurements are taken 2 metres above the ground. If possible, use radiosonde data for more accurate temperature values.
 
-ADMS assumes temperature measurements are taken 2 metres above the ground. If possible, use radiosonde data for more accurate temperature values.
+Wind Speed and Direction (U and PHI):  Ensure these are consistent during the sampling period. If variability in wind speed is observed, include the standard deviation as the **SIGMATHETA** variable.
 
- Wind Speed and Direction (U and PHI):
+Cloud Cover (CL): Measured in oktas. This can be determined from camera footage taken during the sampling period and provided by a meteorologist.
 
-Ensure these are consistent during the sampling period. If variability in wind speed is observed, include the standard deviation as the **SIGMATHETA** variable.
-
- Cloud Cover (CL):
-
-Measured in oktas. This can be determined from camera footage taken during the sampling period and provided by a meteorologist.
-
- Boundary Layer Height (H):
-
-Critical for dispersion modelling, ensure accurate measurements are used.
-
- Precipitation (PRECIP):
+Boundary Layer Height (H): Critical for dispersion modelling, ensure accurate measurements are used.
 
 Add sea surface temperature if the marine boundary layer option is used in ADMS and it is not assumed to be neutral.
 
