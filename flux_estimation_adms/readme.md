@@ -72,7 +72,8 @@ Input data should be in the same order as the variables listed above. Each data 
 
 Temporal Resolution:
 
-The highest resolution of meteorology data allowed in ADMS is 1h, and for the input settings used, ADMS outputs a different modelled scenario for each hour of met data provided (1 line of data = 1h). To avoid this, the meteorology variables obtained while the aircraft was flying over the source are averaged to 1h of met data as long as they are consistent, outputting a single dispersion. This is to avoid multiple model outputs and allow easier analysis.
+The highest resolution of meteorology data allowed in ADMS is 1h, and for the input settings used, ADMS outputs a different modelled scenario for each hour of met data provided (1 line of data = 1h). To avoid this, the meteorology variables obtained while the aircraft was flying over the source are averaged to 1h of met data as long as they are consistent, outputting a single dispersion. This is to avoid multiple model outputs and allow easier analysis. 
+ NOTE: Time resolution cannot be upsaced/downscaled as ADMS considers durinal cycles (eg BL dynamics) 
 
  Variable Considerations:
 
