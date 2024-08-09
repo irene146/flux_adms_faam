@@ -99,5 +99,20 @@ Critical for dispersion modelling, ensure accurate measurements are used.
 
 Add sea surface temperature if the marine boundary layer option is used in ADMS and it is not assumed to be neutral.
 
+### Step 4: Run ADMS model: 
+
+Follow instructions: 
+
+### Step 5: TIE ADMS 
+Run `TIE_ADMS` to calculate TIE for ADMS model output. For this you need your file produced by `lat_lon_to_x_y` and your model output file ending in .levels.gst
+
+### Step 6: Flux calulation: 
+
+**Equation:**
+
+*(Aircraft TIE<sub>yz</sub> (ppb\*m<sup>2</sup>) \* ADMS emission flux input (g/s)) / (ADMS TIE<sub>yz</sub> (ppb\*m<sup>2</sup>)) = Emission flux from source (g/s)*
+
+
+
 
  
