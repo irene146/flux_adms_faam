@@ -1,4 +1,28 @@
 # Flux estimation
+## Theory 
+
+Considering the dispersion of a plume in space within an {x, y, z} coordinate system (Figure 7), where x is the distance from the source, y the cross-wind distance from the plume centreline (horizontal dispersion), and z the plume height (vertical dispersion), we can calculate the total concentration enhancement in the plume in a yz plane at a distance x from the source emission (TIE<sub>yz</sub>), by integrating concentration enhancements E(y,z) (Equation 1).
+
+$$
+TIE_{yz} = \int_{z_{\text{min}}}^{\text{MBLH}} \int_{y_{\text{min}}}^{y_{\text{max}}} E(y,z) \, dy \, dz
+$$
+
+The emission ratios approach in this study  relies on quantifying TIE<sub>yz</sub> values for co-located airborne observations and modelled dispersion. Due to the scarcity of observations, particularly along the vertical height axis, TIE<sub>yz</sub> is calculated as follows:
+
+**Step 1:** Cross-wind integrated concentration enhancements across y at height z are first calculated for each level of cross-wind transects, by integrating concentration enhancements (E<sub>z</sub>(y)) to obtain:
+
+$$
+IE_{zy} = \int_{y_{\text{min}}}^{y_{\text{max}}} E_{z}(y) \, dy   \,(\text{ppb} \times \text{m})
+$$
+
+**Step 2:** We then integrate all IE<sub>z</sub>y across z to obtain the total integrated enhancement across the yz plane as follows:
+
+$$
+TIE_{yz}  = \int_{z_{\text{min}}}^{\text{MBLH}} IE_{zy}(z) \, dz \,(\text{ppb} \times \text{m}^2)
+$$
+
+
+## Procedure for flux estimation
 
 All the scripts there should run with their corresponding sample data file as an example. 
 
