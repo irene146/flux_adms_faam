@@ -61,7 +61,7 @@ List the names of the variables you want to include:
 - **T0C** – Temperature in degrees Celsius.
 - **U** – Wind speed in meters per second (m/s).
 - **PHI** – Wind direction in degrees.
-- **SIGMATHETA** – Standard deviation of wind speed (to account for variability in wind speed).
+- **SIGMATHETA** – Standard deviation of wind direction (to account for variability in wind direction).
 - **CL** – Cloud cover in oktas (0-8 scale).
 - **H** – Boundary layer height in meters.
 - **PRECIP** – Precipitation.
@@ -82,7 +82,7 @@ The highest resolution of meteorology data allowed in ADMS is 1h, and for the in
 
 Temperature (T0C): ADMS assumes temperature measurements are taken 2 metres above the ground. If possible, use radiosonde data for more accurate temperature values.
 
-Wind Speed and Direction (U and PHI):  Ensure these are consistent during the sampling period. If variability in wind speed is observed, include the standard deviation as the **SIGMATHETA** variable.
+Wind Speed and Direction (U and PHI):  Ensure these are consistent during the sampling period. If variability in wind direction is observed, include the standard deviation as the **SIGMATHETA** variable.
 
 Cloud Cover (CL): Measured in oktas. This can be determined from camera footage taken during the sampling period and provided by a meteorologist.
 
