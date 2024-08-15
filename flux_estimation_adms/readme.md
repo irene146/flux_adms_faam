@@ -92,7 +92,7 @@ Add sea surface temperature if the marine boundary layer option is used in ADMS 
 
 ### Step 4: Run ADMS model: 
 
-Follow instructions: 
+Follow instructions in google drive folder 
 
 ### Step 5: TIE ADMS 
 Run `TIE_ADMS` to calculate TIE for ADMS model output. For this you need your file produced by `lat_lon_to_x_y` and your model output file ending in .levels.gst
